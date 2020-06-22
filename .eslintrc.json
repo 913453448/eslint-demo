@@ -35,7 +35,9 @@
   ],
   "extends": [
     "./config/cust-config.js", //继承自定义config文件
-    "plugin:vue/recommended" //继承vue的recommended配置
+    "eslint:recommended",
+    "plugin:vue/recommended", //继承vue的recommended配置
+    "plugin:@typescript-eslint/recommended" //继承typecrupt插件的recommended配置
   ]
 }
 
