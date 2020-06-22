@@ -1445,3 +1445,642 @@ export default{
  我可不可以定义一个叫xxx的规则呢？
 
 可以！ 自定义规则我们会在自定义plugin的时候详细讲解。
+
+#### 禁止规则(Disabling Rules with Inline Comments)
+
+ 既然可以在代码中使用规则，当然也可以在代码中禁用规则。
+
+比如我们创建一个demo-disable.js：
+
+```js
+document.write("hello eslint")
+```
+
+如果我们现在运行一下eslint的话会直接报错，提示我们需要加上“;”符号。
+
+如果我们需要在demo-disable.js文件中禁用掉eslint的话，我们该怎么做呢？
+
+##### 禁止掉所有规则
+
+我们直接把/* eslint-disable */添加到文件的头部，这样会禁止掉所有的eslint规则
+
+```js
+/* eslint-disable */
+document.write("hello eslint")
+```
+
+##### 禁止掉指定的规则
+
+/* eslint-disable semi*/，如果有多个规则的话逗号隔开   /* eslint-disable no-alert, no-console */
+
+```js
+/* eslint-disable semi*/
+document.write("hello esslint")
+```
+
+##### 单行注释
+
+```js
+document.write("hello esslint") // eslint-disable-line semi
+document.write("hello esslint") //eslint-disable-line
+document.write("hello esslint") /* eslint-disable-line no-alert */
+/* eslint-disable-next-line no-alert */
+document.write("hello esslint")
+document.write("hello esslint") // eslint-disable-line semi,quotes  多个注释逗号隔开
+```
+
+##### 以文件分组禁止（Disabling Rules Only for a Group of Files）
+
+比如我们要禁止demo-disable.js
+
+.eslintrc.json：
+
+```json
+{
+  "env": {
+    "browser": true,
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "sourceType": "module"
+  },
+  "parser": "vue-eslint-parser",
+  "plugins": [
+    "vue",
+    "@typescript-eslint"
+  ],
+  "processor": "vue/.vue",
+  "globals": {
+    "fox": "readonly"
+  },
+  "rules": {
+    "semi": [
+      "error",
+      "always"
+    ],
+    "quotes": ["error", "double"]
+  },
+  "overrides": [
+    {
+      "files": ["demo-disable.js"],
+      "rules": {
+        "semi": "off"
+      }
+    }
+  ]
+}
+
+```
+
+### 共享设置（Settings）
+
+ESLint 支持在配置文件添加共享设置。你可以添加 `settings` 对象到配置文件，它将提供给每一个将被执行的规则。如果你想添加的自定义规则而且使它们可以访问到相同的信息，在每个规则的回调函数的context对象中包含settings属性。
+
+在 JSON配置文件中：
+
+```json
+{
+    "settings": {
+        "sharedData": "Hello"
+    }
+}
+```
+
+自定义rules会在后面的自定义plugin文章中详细介绍。
+
+### 配置文件格式（Configuration File Formats）
+
+ESLint 支持几种格式的配置文件：
+
+- **JavaScript** - 使用 `.eslintrc.js` 然后输出一个配置对象。
+- **YAML** - 使用 `.eslintrc.yaml` 或 `.eslintrc.yml` 去定义配置的结构。
+- **JSON** - 使用 `.eslintrc.json` 去定义配置的结构，ESLint 的 JSON 文件允许 JavaScript 风格的注释。
+- **(弃用)** - 使用 `.eslintrc`，可以使 JSON 也可以是 YAML。
+- **package.json** - 在 `package.json` 里创建一个 `eslintConfig`属性，在那里定义你的配置。
+
+如果同一个目录下有多个配置文件，ESLint 只会使用一个。优先级顺序如下：
+
+1. `.eslintrc.js`
+2. `.eslintrc.yaml`
+3. `.eslintrc.yml`
+4. `.eslintrc.json`
+5. `.eslintrc`
+6. `package.json`
+
+### 配置文件层级和嵌套（Configuration Cascading and Hierarchy）
+
+当使用 `.eslintrc.*` 和 `package.json`文件的配置时，你可以利用层叠配置。例如，假如你有以下结构：
+
+```
+your-project
+├── .eslintrc
+├── lib
+│ └── source.js
+└─┬ tests
+  ├── .eslintrc
+  └── test.js
+```
+
+层叠配置使用离要检测的文件最近的 `.eslintrc`文件作为最高优先级，然后才是父目录里的配置文件，等等。当你在这个项目中允许 ESLint 时，`lib/` 下面的所有文件将使用项目根目录里的 `.eslintrc` 文件作为它的配置文件。当 ESLint 遍历到 `test/` 目录，`your-project/.eslintrc` 之外，它还会用到 `your-project/tests/.eslintrc`。所以 `your-project/tests/test.js` 是基于它的目录层次结构中的两个`.eslintrc` 文件的组合，并且离的最近的一个优先。通过这种方式，你可以有项目级 ESLint 设置，也有覆盖特定目录的 ESLint 设置。
+
+同样的，如果在根目录的 `package.json` 文件中有一个 `eslintConfig` 字段，其中的配置将使用于所有子目录，但是当 `tests` 目录下的 `.eslintrc` 文件中的规则与之发生冲突时，就会覆盖它。
+
+```
+your-project
+├── package.json
+├── lib
+│ └── source.js
+└─┬ tests
+  ├── .eslintrc
+  └── test.js
+```
+
+如果同一目录下 `.eslintrc` 和 `package.json` 同时存在，`.eslintrc` 优先级高会被使用，`package.json` 文件将不会被使用。
+
+**注意：**如果在你的主目录下有一个自定义的配置文件 (`~/.eslintrc`) ，如果没有其它配置文件时它才会被使用。因为个人配置将适用于用户目录下的所有目录和文件，包括第三方的代码，当 ESLint 运行时可能会导致问题。
+
+默认情况下，ESLint 会在所有父级目录里寻找配置文件，一直到根目录。如果你想要你所有项目都遵循一个特定的约定时，这将会很有用，但有时候会导致意想不到的结果。为了将 ESLint 限制到一个特定的项目，在你项目根目录下的 `package.json` 文件或者 `.eslintrc.*` 文件里的 `eslintConfig` 字段下设置 `"root": true`。ESLint 一旦发现配置文件中有 `"root": true`，它就会停止在父级目录中寻找。
+
+```
+{
+    "root": true
+}
+```
+
+在 YAML 中：
+
+```
+---
+  root: true
+```
+
+例如，`projectA` 的 `lib/` 目录下的 `.eslintrc` 文件中设置了 `"root": true`。这种情况下，当检测 `main.js` 时，`lib/` 下的配置将会被使用，`projectA/` 下的 `.eslintrc` 将不会被使用。
+
+```
+home
+└── user
+    ├── .eslintrc <- Always skipped if other configs present
+    └── projectA
+        ├── .eslintrc  <- Not used
+        └── lib
+            ├── .eslintrc  <- { "root": true }
+            └── main.js
+```
+
+完整的配置层次结构，从最高优先级最低的优先级，如下:
+
+1. 行内配置
+   1. `/*eslint-disable*/` 和 `/*eslint-enable*/`
+   2. `/*global*/`
+   3. `/*eslint*/`
+   4. `/*eslint-env*/`
+2. 命令行选项（或 CLIEngine 等价物）：
+   1. `--global`
+   2. `--rule`
+   3. `--env`
+   4. `-c`、`--config`
+3. 项目级配置：
+   1. 与要检测的文件在同一目录下的 `.eslintrc.*` 或 `package.json` 文件
+   2. 继续在父级目录寻找 `.eslintrc` 或 `package.json`文件，直到根目录（包括根目录）或直到发现一个有`"root": true`的配置。
+4. 如果不是（1）到（3）中的任何一种情况，退回到 `~/.eslintrc` 中自定义的默认配置。
+
+### 继承配置文件（Extending Configuration Files）
+
+我们可以使用extends字段去继承一个配置文件，这个配置文件可以是单独的一个文件、第三方依赖、插件。
+
+#### 单独的一个config文件
+
+我们在项目根目录创建一个config目录，然后在config目录中创建一个cust-config.js，然后添加一条“不允许出现console”的规则。
+
+cust-config.js：
+
+```js
+module.exports = {
+    rules: {
+        "no-console": "error", //禁止使用console
+    }
+};
+```
+
+然后创建一个demo-console.js测试
+
+demo-console.js：
+
+```js
+console.log("hello eslint");
+```
+
+然后使用extends字段继承我们的配置信息
+
+.eslintrc.json：
+
+```json
+{
+  "env": {
+    "browser": true,
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "sourceType": "module"
+  },
+  "parser": "vue-eslint-parser",
+  "plugins": [
+    "vue",
+    "@typescript-eslint"
+  ],
+  "processor": "vue/.vue",
+  "globals": {
+    "fox": "readonly"
+  },
+  "rules": {
+    "semi": [
+      "error",
+      "always"
+    ],
+    "quotes": ["error", "double"]
+  },
+  "overrides": [
+    {
+      "files": ["demo-disable.js"],
+      "rules": {
+        "semi": "off"
+      }
+    }
+  ],
+  "extends": [
+    "./config/cust-config.js"
+  ]
+}
+
+```
+
+运行eslint：
+
+```
+192:eslint-demo yinqingyang$ npx eslint ./src/*
+
+/Users/yinqingyang/doc/h5/study/高级程序设计/eslint-demo/src/demo-console.js
+  1:1  error  Unexpected console statement  no-console
+
+/Users/yinqingyang/doc/h5/study/高级程序设计/eslint-demo/src/demo-semi.js
+  1:31  error  Missing semicolon  semi
+
+/Users/yinqingyang/doc/h5/study/高级程序设计/eslint-demo/src/demo2.vue
+  5:11  error  Strings must use doublequote  quotes
+
+✖ 3 problems (3 errors, 0 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+
+192:eslint-demo yinqingyang$ 
+
+
+```
+
+可以发现有报错信息“error  Unexpected console statement  no-console”，说明我们的自定义config文件起作用了。
+
+#### 第三方依赖
+
+其实跟我们第一种方式是一样的，也就是把我们的config文件发布，然后利用npm依赖，我就不演示了。
+
+#### 插件继承
+
+这种方式其实跟第二种有点像，但是插件的功能大于配置文件功能，前面我们使用了两个插件：eslint-plugin-vue跟@t y pescript-eslint/eslint-plugin,我们也提前已经使用了插件：
+
+.eslintrc.json
+
+```json
+{
+ ...
+  "plugins": [
+    "vue",
+    "@typescript-eslint"
+  ],
+ ...
+}
+
+```
+
+我们打开vue的插件看一下清单文件:
+
+Xxx/eslint-demo/node_modules/eslint-plugin-vue/lib/index.js
+
+```js
+/*
+ * IMPORTANT!
+ * This file has been automatically generated,
+ * in order to update it's content execute "npm run update"
+ */
+'use strict'
+
+module.exports = {
+	...
+  configs: {
+    'base': require('./configs/base'),
+    'essential': require('./configs/essential'),
+    'no-layout-rules': require('./configs/no-layout-rules'),
+    'recommended': require('./configs/recommended'),
+    'strongly-recommended': require('./configs/strongly-recommended')
+  },
+  ...
+}
+
+```
+
+可以看到，vue插件提供了configs字段给外部调用，里面有“base”、“essential”、“no-layout-rules”、“recommended”
+
+、“strongly-recommended”，我们打开base看看：
+
+```js
+/*
+ * IMPORTANT!
+ * This file has been automatically generated,
+ * in order to update it's content execute "npm run update"
+ */
+module.exports = {
+  parser: require.resolve('vue-eslint-parser'),
+  parserOptions: {
+    ecmaVersion: 2018,
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true
+    }
+  },
+  env: {
+    browser: true,
+    es6: true
+  },
+  plugins: [
+    'vue'
+  ],
+  rules: {
+    'vue/comment-directive': 'error',
+    'vue/jsx-uses-vars': 'error'
+  }
+}
+
+```
+
+其实这就是一个eslint的配置文件，我们可以选择继承并使用它。比如我们使用一下vue的recommended配置：
+
+.eslintrc.json
+
+```json
+{
+  "env": {
+    "browser": true,
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "sourceType": "module"
+  },
+  "parser": "vue-eslint-parser",
+  "plugins": [
+    "vue",
+    "@typescript-eslint"
+  ],
+  "processor": "vue/.vue",
+  "globals": {
+    "fox": "readonly"
+  },
+  "rules": {
+    "semi": [
+      "error",
+      "always"
+    ],
+    "quotes": ["error", "double"]
+  },
+  "overrides": [
+    {
+      "files": ["demo-disable.js"],
+      "rules": {
+        "semi": "off"
+      }
+    }
+  ],
+  "extends": [
+    "./config/cust-config.js", //继承自定义config文件
+    "plugin:vue/recommended" //继承vue的recommended配置
+  ]
+}
+
+```
+
+```
+192:eslint-demo yinqingyang$ npx eslint ./src/*
+
+xx/doc/h5/study/高级程序设计/eslint-demo/src/demo-console.js
+  1:1  error  Unexpected console statement  no-console
+
+xx/doc/h5/study/高级程序设计/eslint-demo/src/demo-semi.js
+  1:31  error  Missing semicolon  semi
+
+xx/doc/h5/study/高级程序设计/eslint-demo/src/demo2.vue
+  1:1   error    The template root requires exactly one element      vue/valid-template-root
+  1:1   warning  Require self-closing on HTML elements (<template>)  vue/html-self-closing
+  5:11  error    Strings must use doublequote                        quotes
+  5:11  warning  Property name "demo2" is not PascalCase             vue/name-property-casing
+
+✖ 6 problems (4 errors, 2 warnings)
+  2 errors and 2 warnings potentially fixable with the `--fix` option.
+
+192:eslint-demo yinqingyang$ 
+```
+
+可以看到，我们的demo2.vue文件中多了很多报错
+
+demo2.vue：
+
+```jsx
+<template>
+</template>
+<script>
+export default{
+    name: 'demo2',
+};
+</script>
+<style lang='scss' scoped>
+</style>
+
+```
+
+1. The template root requires exactly one element      vue/valid-template-root
+
+   （模版必须包含至少一个元素）
+
+2.  warning  Require self-closing on HTML elements (<template>)  vue/html-self-closing
+
+   （如果为空元素的话使用自闭合）
+
+3.  error    Strings must use doublequote                        quotes
+
+4.  warning  Property name "demo2" is not PascalCase             vue/name-property-casing
+
+   （组件的name属性必须是驼峰命名）
+
+### 忽略文件（Ignoring Files and Directories）
+
+demo中我们可以看到，我们每次执行eslint的时候执行的命令：
+
+```
+npx eslint ./src/*
+```
+
+也就是说会校验./src目录下的所有文件，如果有些文件不需要校验的话该怎么办呢？
+
+#### `.eslintignore`
+
+在根目录创建一个`.eslintignore`文件。
+
+.eslintignore:
+
+```js
+src/demo-ignore.js
+```
+
+然后我们在src下面创建一个demo-ignore.js：
+
+demo-ignore.js
+
+```js
+document.write("hello eslint")
+```
+
+运行eslint:
+
+```
+192:eslint-demo yinqingyang$ npx eslint ./src/*
+
+xx/study/高级程序设计/eslint-demo/src/demo-console.js
+  1:1  error  Unexpected console statement  no-console
+
+xx/h5/study/高级程序设计/eslint-demo/src/demo-ignore.js
+  0:0  warning  File ignored because of a matching ignore pattern. Use "--no-ignore" to override
+
+xx/study/高级程序设计/eslint-demo/src/demo-semi.js
+  1:31  error  Missing semicolon  semi
+
+xxy/高级程序设计/eslint-demo/src/demo2.vue
+  2:1   warning  Expected indentation of 2 spaces but found 4 spaces  vue/html-indent
+  6:11  error    Strings must use doublequote                         quotes
+  6:11  warning  Property name "demo2" is not PascalCase              vue/name-property-casing
+
+✖ 6 problems (3 errors, 3 warnings)
+  2 errors and 2 warnings potentially fixable with the `--fix` option.
+
+192:eslint-demo yinqingyang$ 
+
+```
+
+可以看到一条警告：
+
+```
+xx/h5/study/高级程序设计/eslint-demo/src/demo-ignore.js
+  0:0  warning  File ignored because of a matching ignore pattern. Use "--no-ignore" to override
+```
+
+当 ESLint 运行时，在确定哪些文件要检测之前，它会在当前工作目录中查找一个 `.eslintignore` 文件。如果发现了这个文件，当遍历目录时，将会应用这些偏好设置。一次只有一个 `.eslintignore` 文件会被使用，所以，不是当前工作目录下的 `.eslintignore` 文件将不会被用到。
+
+Globs 匹配使用 [node-ignore](https://github.com/kaelzhang/node-ignore)，所以大量可用的特性有：
+
+- 以 `#` 开头的行被当作注释，不影响忽略模式。
+- 路径是相对于 `.eslintignore` 的位置或当前工作目录。通过 `--ignore-pattern` [command](https://eslint.bootcss.com/docs/user-guide/command-line-interface#--ignore-pattern) 传递的路径也是如此。
+- 忽略模式同 `.gitignore` [规范](https://git-scm.com/docs/gitignore)
+- 以 `!` 开头的行是否定模式，它将会重新包含一个之前被忽略的模式。
+- 忽略模式依照 `.gitignore` [规范](https://git-scm.com/docs/gitignore).
+
+特别值得注意的是，就像 `.gitignore` 文件，所有用作 `.eslintignore` 和 `--ignore-pattern` 模式的路径必须使用前斜杠作为它们的路径分隔符。
+
+```
+# Valid
+/root/src/*.js
+
+# Invalid
+\root\src\*.js
+```
+
+请参参阅 `.gitignore` 规范查看有关有效语法的更多示例。
+
+除了 `.eslintignore` 文件中的模式，ESLint总是忽略 `/node_modules/*` 和 `/bower_components/*` 中的文件。
+
+例如：把下面 `.eslintignore` 文件放到当前工作目录里，将忽略项目根目录下的 `node_modules`，`bower_components` 以及 `build/` 目录下除了 `build/index.js` 的所有文件。
+
+```
+# /node_modules/* and /bower_components/* in the project root are ignored by default
+
+# Ignore built files except build/index.js
+build/*
+!build/index.js
+```
+
+**重要：**注意代码库的 `node_modules` 目录，比如，一个 `packages` 目录，默认情况下不会被忽略，需要手动添加到 `.eslintignore`。
+
+### Using an Alternate File
+
+如果相比于当前工作目录下 `.eslintignore` 文件，你更想使用一个不同的文件，你可以在命令行使用 `--ignore-path` 选项指定它。例如，你可以使用 `.jshintignore` 文件，因为它有相同的格式：
+
+```
+eslint --ignore-path .jshintignore file.js
+```
+
+你也可以使用你的 `.gitignore` 文件：
+
+```
+eslint --ignore-path .gitignore file.js
+```
+
+任何文件只要满足标准忽略文件格式都可以用。记住，指定 `--ignore-path` 意味着任何现有的 `.eslintignore` 文件将不被使用。请注意，`.eslintignore` 中的匹配规则比 `.gitignore` 中的更严格。
+
+### Using eslintIgnore in package.json
+
+如果没有发现 `.eslintignore` 文件，也没有指定替代文件，ESLint 将在 package.json 文件中查找 `eslintIgnore` 键，来检查要忽略的文件。
+
+```
+{
+  "name": "mypackage",
+  "version": "0.0.1",
+  "eslintConfig": {
+      "env": {
+          "browser": true,
+          "node": true
+      }
+  },
+  "eslintIgnore": ["hello.js", "world.js"]
+}
+```
+
+### Ignored File Warnings
+
+当你传递目录给 ESLint，文件和目录是默默被忽略的。如果你传递一个指定的文件给 ESLint，你会看到一个警告，表明该文件被跳过了。例如，假如你有一个像这样的 `.eslintignore`文件：
+
+```
+foo.js
+```
+
+然后你执行：
+
+```
+eslint foo.js
+```
+
+你将会看到这个警告：
+
+```
+foo.js
+  0:0  warning  File ignored because of your .eslintignore file. Use --no-ignore to override.
+
+✖ 1 problem (0 errors, 1 warning)
+```
+
+这种消息出现是因为 ESLint 不确定你是否想检测文件。正如这个消息表明的那样，你可以使用 `--no-ignore` 覆盖忽略的规则。
+
+好啦，eslint的配置文件环节我们算是全部分析了一遍，文章有点长，我们算结合demo跟着官网走了一遍，也算是收获满满，不得不佩服写eslint框架的大神，使得功能这么强大的一个工具变得这么通俗易懂，下一节我们将重点针对eslint的plugin做解析，打造一个属于你自己的plugin，敬请期待！
+
