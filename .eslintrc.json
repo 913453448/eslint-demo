@@ -1,3 +1,28 @@
 {
-
+  "env": {
+    "browser": true,
+    "es2020": true
+  },
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "sourceType": "module"
+  },
+  "parser": "vue-eslint-parser",
+  "plugins": [
+    "vue",
+    "@typescript-eslint"
+  ],
+  "processor": "vue/.vue",
+  "globals": {
+    "fox": "readonly"
+  },
+  "rules": {
+    "semi": [
+      "error",
+      "always"
+    ],
+    "quotes": ["error", "double"]
+  }
 }

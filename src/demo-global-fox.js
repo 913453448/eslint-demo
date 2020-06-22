@@ -1,0 +1,1 @@
+fox.say("hello");
