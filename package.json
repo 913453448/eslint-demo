@@ -12,6 +12,7 @@
     "typescript": "^3.9.5"
   },
   "devDependencies": {
+    "@fox/eslint-plugin": "file:plugins/fox-plugin",
     "@typescript-eslint/eslint-plugin": "^3.3.0",
     "@typescript-eslint/parser": "^3.3.0",
     "eslint": "^7.3.0",
